@@ -6,17 +6,11 @@ require('shelljs/global');
 
 var pwd = process.cwd();
 
-var docset_name = "template";
-
-
-
-if (!which('git')) {
-  echo('Sorry, this script requires git');
-  exit(1);
-}
+var docset_name = "template.docset";
 
 /**
- *
+ * http://kapeli.com/docsets
+ 
   1. Create the Docset Folder
   The docset folder structure can be created using this Terminal command:
 
@@ -75,23 +69,6 @@ function create_the_info_plist_file(callback){
 
   CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);
  *
- */ 
-
-function create_the_sqlite_index(callback){
-  console.log('create_the_sqlite_index');
-  
-  var sql = [
-    "drop TABLE  if exists searchIndex",
-    "CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);",
-    "CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);"
-  ]
-  _exec_sql(sql);
-  
-  callback(null, 'create_the_sqlite_index');
-}
-
-
-/**
  *
 5. Populate the SQLite Index
 You need to create a script (or application or whatever) that will go through your HTML documentation and add appropriate rows into the SQLite database. Rows can be added using this query:
@@ -107,6 +84,61 @@ path is the relative path towards the documentation file you want Dash to displa
  */ 
 
 function populate_the_sqlite_index(callback){
+  
+  // var sql = [
+ //    "drop TABLE  if exists searchIndex",
+ //    "CREATE TABLE searchIndex(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT, type TEXT, path TEXT);",
+ //    "CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);"
+ //  ]
+ //  _exec_sql(sql);
+  
+  
+  var sql =[
+    "drop TABLE  if exists searchIndex",
+    "CREATE TABLE searchIndex(id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, name TEXT, type TEXT, path TEXT);",
+    "CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('About these Docs','File','documentation.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Synopsis','File','synopsis.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Assertion Testing','File','assert.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Buffer','File','buffer.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('C/C++ Addons','File','addons.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Child Processes','File','child_process.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Cluster','File','cluster.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Console','File','console.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Crypto','File','crypto.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Debugger','File','debugger.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('DNS','File','dns.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Domain','File','domain.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Events','File','events.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('File System','File','fs.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Globals','File','globals.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('HTTP','File','http.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('HTTPS','File','https.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Modules','File','modules.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Net','File','net.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('OS','File','os.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Path','File','path.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Process','File','process.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Punycode','File','punycode.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Query Strings','File','querystring.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Readline','File','readline.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('REPL','File','repl.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Smalloc','File','smalloc.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Stream','File','stream.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('String Decoder','File','string_decoder.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Timers','File','timers.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('TLS/SSL','File','tls.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('TTY','File','tty.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('UDP/Datagram','File','dgram.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('URL','File','url.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('Utilities','File','util.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('V8','File','v8.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('VM','File','vm.html')",
+    "INSERT INTO searchIndex ( name, type , path) VALUES ('ZLIB','File','zlib.html')"
+  ];
+  
+  _exec_sql(sql);
+  
   callback(null, 'populate_the_sqlite_index');
 }
 
@@ -144,6 +176,19 @@ function table_of_contents_support(callback){
   callback(null, 'table_of_contents_support');
 }
 
+// To archive your docset, use the following command:
+function archive_your_docset(callback){
+  // Run external tool synchronously
+
+  if (exec("tar --exclude='.DS_Store' -cvzf iojs-v1.1.1.tgz vendor/template.docset").code !== 0) {
+    echo('Error: Archive failed');
+    exit(1);
+  }else{
+    echo('Sucess: Archive finished!');
+  }
+  
+  callback(null, 'archive_your_docset');
+}
 /**
  * main function
  * http://kapeli.com/docsets
@@ -156,7 +201,6 @@ function main(){
     create_the_docset_folder    : create_the_docset_folder,
     copy_the_html_documentation : copy_the_html_documentation,
     create_the_info_plist_file  : create_the_info_plist_file,
-    create_the_sqlite_index     : create_the_sqlite_index,
     populate_the_sqlite_index   : populate_the_sqlite_index,
     table_of_contents_support   : table_of_contents_support
   },
@@ -169,6 +213,9 @@ function main(){
       
       console.log(results);
   });
+  
+  
+  
 }
 
 function clean(){
