@@ -34,8 +34,8 @@ function create_the_docset_folder(callback){
 
 /**
  *
-2. Copy the HTML Documentation
-Copy the HTML documentation you already have in the <docset name>.docset/Contents/Resources/Documents/ folder.
+  2. Copy the HTML Documentation
+  Copy the HTML documentation you already have in the <docset name>.docset/Contents/Resources/Documents/ folder.
  *
  */ 
 function copy_the_html_documentation(callback){
@@ -49,9 +49,9 @@ function copy_the_html_documentation(callback){
 
 /**
  *
-3. Create the Info.plist File
-Download and edit this sample Info.plist and place it in the <docset name>.docset/Contents/ folder. 
-Editing should be straightforward, just set the values to whatever name you want for your docset.
+  3. Create the Info.plist File
+  Download and edit this sample Info.plist and place it in the <docset name>.docset/Contents/ folder. 
+  Editing should be straightforward, just set the values to whatever name you want for your docset.
 *
 *
 */ 
@@ -67,27 +67,26 @@ function create_the_info_plist_file(callback){
 
 /**
  *
-4. Create the SQLite Index
-Create a SQLite database in the file <docset name>.docset/Contents/Resources/docSet.dsidx with the following query:
+  4. Create the SQLite Index
+  Create a SQLite database in the file <docset name>.docset/Contents/Resources/docSet.dsidx with the following query:
 
-CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);
-Recommended: you can easily prevent adding duplicate entries in the index by also using this query:
+  CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);
+  Recommended: you can easily prevent adding duplicate entries in the index by also using this query:
 
-CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);
+  CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);
  *
  */ 
 
 function create_the_sqlite_index(callback){
   console.log('create_the_sqlite_index');
-  var db = new sqlite3.Database('vendor/' + docset_name + '/Contents/Resources/docSet.dsidx');
-
-  db.serialize(function() {
-    db.run("drop TABLE  if exists searchIndex");
-    db.run("CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);");
-    db.run("CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);");
-  });
-
-  db.close();
+  
+  var sql = [
+    "drop TABLE  if exists searchIndex",
+    "CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);",
+    "CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);"
+  ]
+  _exec_sql(sql);
+  
   callback(null, 'create_the_sqlite_index');
 }
 
@@ -150,7 +149,8 @@ function table_of_contents_support(callback){
  * http://kapeli.com/docsets
  */ 
 function main(){
-  rm('-rf', 'vendor/' + docset_name + '');
+  clean();
+  
   // an example using an object instead of an array
   async.series({
     create_the_docset_folder    : create_the_docset_folder,
@@ -172,15 +172,26 @@ function main(){
 }
 
 function clean(){
-  // rm('-rf', 'vendor/' + docset_name + '');
+  rm('-rf', 'vendor/' + docset_name + '');
 }
 
 
 function _copy(source_path, dest_path){
-  // fs.createReadStream(source_path).pipe(fs.createWriteStream(dest_path));
   cp('-Rf', source_path, dest_path);
 }
 
+function _exec_sql(sql_array){
+  var db = new sqlite3.Database('vendor/' + docset_name + '/Contents/Resources/docSet.dsidx');
+
+  db.serialize(function() {
+    sql_array.forEach(function(sql){
+      console.log('SQL=' + sql);
+      db.run(sql);
+    });
+  });
+
+  db.close();
+}
 // mkdir('-p', 'vendor/' + docset_name + '/Contents/Resources/Documents/');
 // var src = "vendor/Info.plist"
 // var desc = "vendor/' + docset_name + '/Contents/"

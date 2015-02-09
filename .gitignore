@@ -28,4 +28,4 @@ node_modules
 .lock-wscript
 
 # for custom
-vendor/template
+vendor/temp*
