@@ -1,6 +1,14 @@
 var fs = require('fs');
+var async = require('async');
+var sqlite3 = require('sqlite3').verbose();
 
 require('shelljs/global');
+
+var pwd = process.cwd();
+
+var docset_name = "template";
+
+
 
 if (!which('git')) {
   echo('Sorry, this script requires git');
@@ -16,10 +24,11 @@ if (!which('git')) {
   You can also manually create the docset structure if you want, they're just folders.
  *
  */ 
-function create_the_docset_folder(){
-
+function create_the_docset_folder(callback){
+  console.log('create_the_docset_folder');
   // Copy files to release dir
-  mkdir('-p', 'out/iojs.docset/Contents/Resources/Documents/');
+  mkdir('-p', 'vendor/' + docset_name + '/Contents/Resources/Documents/');
+  callback(null, 'create_the_docset_folder');
 }
 
 
@@ -29,13 +38,14 @@ function create_the_docset_folder(){
 Copy the HTML documentation you already have in the <docset name>.docset/Contents/Resources/Documents/ folder.
  *
  */ 
-function copy_the_html_documentation(){
-  
+function copy_the_html_documentation(callback){
+  console.log('copy_the_html_documentation');
+  var src = "/Users/sang/workspace/github/io.js/out/doc/api/";
+  var desc = 'vendor/' + docset_name + '/Contents/Resources/Documents/'
+  _copy(src, desc);
+  callback(null, 'copy_the_html_documentation');
 }
 
-function _copy(source_path, dest_path){
-  fs.createReadStream(source_path).pipe(fs.createWriteStream(dest_path));
-}
 
 /**
  *
@@ -46,8 +56,12 @@ Editing should be straightforward, just set the values to whatever name you want
 *
 */ 
 
-function create_the_info_plist_file(){
-  
+function create_the_info_plist_file(callback){
+   console.log('create_the_info_plist_file');
+   var src = "vendor/Info.plist"
+   var desc = 'vendor/' + docset_name + '/Contents/'
+  _copy(src, desc);
+  callback(null, 'create_the_info_plist_file');
 }
 
 
@@ -63,8 +77,18 @@ CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);
  *
  */ 
 
-function create_the_sqlite_index(){
-  
+function create_the_sqlite_index(callback){
+  console.log('create_the_sqlite_index');
+  var db = new sqlite3.Database('vendor/' + docset_name + '/Contents/Resources/docSet.dsidx');
+
+  db.serialize(function() {
+    db.run("drop TABLE  if exists searchIndex");
+    db.run("CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);");
+    db.run("CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);");
+  });
+
+  db.close();
+  callback(null, 'create_the_sqlite_index');
 }
 
 
@@ -83,8 +107,8 @@ path is the relative path towards the documentation file you want Dash to displa
  *
  */ 
 
-function populate_the_sqlite_index(){
-  
+function populate_the_sqlite_index(callback){
+  callback(null, 'populate_the_sqlite_index');
 }
 
 
@@ -117,8 +141,8 @@ After changing the Info.plist, you should remove the docset from Preferences > D
 Do not hesitate to contact me if you are having problems with this. The process is a bit confusing.
  *
  */ 
-function table_of_contents_support(){
-  
+function table_of_contents_support(callback){
+  callback(null, 'table_of_contents_support');
 }
 
 /**
@@ -126,12 +150,41 @@ function table_of_contents_support(){
  * http://kapeli.com/docsets
  */ 
 function main(){
-  create_the_docset_folder();
-  copy_the_html_documentation();
-  create_the_info_plist_file();
-  create_the_sqlite_index();
-  populate_the_sqlite_index();
-  table_of_contents_support();
+  rm('-rf', 'vendor/' + docset_name + '');
+  // an example using an object instead of an array
+  async.series({
+    create_the_docset_folder    : create_the_docset_folder,
+    copy_the_html_documentation : copy_the_html_documentation,
+    create_the_info_plist_file  : create_the_info_plist_file,
+    create_the_sqlite_index     : create_the_sqlite_index,
+    populate_the_sqlite_index   : populate_the_sqlite_index,
+    table_of_contents_support   : table_of_contents_support
+  },
+  function(err, results) {
+      // results is now equal to: {one: 1, two: 2}
+      if(err){
+        console.log(err);
+        throw err;
+      }
+      
+      console.log(results);
+  });
 }
+
+function clean(){
+  // rm('-rf', 'vendor/' + docset_name + '');
+}
+
+
+function _copy(source_path, dest_path){
+  // fs.createReadStream(source_path).pipe(fs.createWriteStream(dest_path));
+  cp('-Rf', source_path, dest_path);
+}
+
+// mkdir('-p', 'vendor/' + docset_name + '/Contents/Resources/Documents/');
+// var src = "vendor/Info.plist"
+// var desc = "vendor/' + docset_name + '/Contents/"
+// _copy(src, desc);
+
 
 main();
